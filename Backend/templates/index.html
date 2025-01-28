@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Quality Monitoring</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        input {
+            padding: 10px;
+            width: 100%;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .result {
+            margin-top: 20px;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .recommendation {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        .green {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .yellow {
+            background-color: #ffeb3b;
+            color: black;
+        }
+
+        .orange {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .red {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .purple {
+            background-color: #9c27b0;
+            color: white;
+        }
+
+        .maroon {
+            background-color: #800000;
+            color: white;
+        }
+
+        .error {
+            color: red;
+            font-size: 16px;
+        }
+
+        #loading {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Air Quality Monitoring</h1>
+    <input type="text" id="city" placeholder="Enter city name" />
+    <button id="submitBtn">Get AQI</button>
+    
+    <div id="loading" style="text-align:center;">Loading...</div>
+    <div id="result" class="result"></div>
+</div>
+
+<script>
+    document.getElementById('submitBtn').addEventListener('click', function() {
+        const city = document.getElementById('city').value.trim();
+        
+        if (city === '') {
+            alert('Please enter a city name.');
+            return;
+        }
+
+        document.getElementById('loading').style.display = 'block';  // Show loading spinner
+
+        fetch('/get_aqi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `city=${city}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resultDiv = document.getElementById('result');
+            document.getElementById('loading').style.display = 'none';  // Hide loading spinner
+
+            if (data.status === 'success') {
+                let recommendation = '';
+                let colorClass = '';
+
+                // Determine recommendation based on AQI
+                const aqi = data.aqi;
+
+                if (aqi <= 50) {
+                    recommendation = "It's a good day for outdoor activities!";
+                    colorClass = 'green';
+                } else if (aqi <= 100) {
+                    recommendation = "Air quality is acceptable. Consider limiting prolonged outdoor activities.";
+                    colorClass = 'yellow';
+                } else if (aqi <= 150) {
+                    recommendation = "Sensitive groups should avoid outdoor activities.";
+                    colorClass = 'orange';
+                } else if (aqi <= 200) {
+                    recommendation = "Limit outdoor activities, especially for children and elderly individuals.";
+                    colorClass = 'red';
+                } else if (aqi <= 300) {
+                    recommendation = "Avoid outdoor activities. Stay indoors if possible.";
+                    colorClass = 'purple';
+                } else {
+                    recommendation = "Serious health effects. Stay indoors and avoid any physical exertion.";
+                    colorClass = 'maroon';
+                }
+
+                resultDiv.innerHTML = `
+                    <h2>AQI Data for ${data.city}</h2>
+                    <p><strong>AQI:</strong> ${data.aqi}</p>
+                    <p><strong>PM2.5:</strong> ${data.pm25} µg/m³</p>
+                    <p><strong>PM10:</strong> ${data.pm10} µg/m³</p>
+                    <p><strong>NO2:</strong> ${data.no2} µg/m³</p>
+                    <p><strong>Last Updated:</strong> ${data.last_updated}</p>
+                    <div class="recommendation ${colorClass}">${recommendation}</div>
+                `;
+            } else {
+                resultDiv.innerHTML = `<p class="error">${data.message}</p>`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('loading').style.display = 'none';  // Hide loading spinner
+            document.getElementById('result').innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        });
+    });
+</script>
+
+</body>
+</html>
+
